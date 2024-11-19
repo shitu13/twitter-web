@@ -1,5 +1,5 @@
+import path from "path";
 import express from "express";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { v2 as cloudinary } from "cloudinary";
@@ -9,6 +9,8 @@ import authRoutes from './src/routes/authRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
 import postRoutes from './src/routes/postRoutes.js';
 import notificationRoutes from './src/routes/notificationRoutes.js';
+
+import connectMongoDB from "./src/db/connectMongoDB.js";
 
 
 dotenv.config();
@@ -25,10 +27,7 @@ app.use(cookieParser());
 
 
 const port = process.env.PORT || 5000;
-
-app.listen(port, (req, res) =>
-    console.log(`Server is running on port ${port}`
-    ));
+const __dirname = path.resolve();
 
 
 app.use('/api/auth', authRoutes);
@@ -36,13 +35,17 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+    app.get("*", (req, res) => {
+        res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+    });
+}
+
 
 // Write a test api endpoint
-app.get("/test", (req, res) => {
-    res.json({ message: "Hello from the test endpoint" });
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+    connectMongoDB();
 });
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("Connected to MongoDB"))
-    .catch((err) => console.error("Failed to connect to MongoDB", err));
